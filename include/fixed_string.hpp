@@ -51,13 +51,19 @@
 #define FIXSTR_HAS_CPP17 1
 #else
 #define FIXSTR_HAS_CPP17 0
-#endif
+#endif // FIXSTR_CPP_VERSION >= 201703L
 
 #if FIXSTR_HAS_CPP17
 #define FIXSTR_CPP17_CONSTEXPR constexpr
 #else
 #define FIXSTR_CPP17_CONSTEXPR /* empty */
-#endif
+#endif // FIXSTR_HAS_CPP17
+
+#if FIXSTR_HAS_CPP17 && !defined(FIXSTR_NO_STD_STRING_VIEW)
+#define FIXSTR_USE_STD_STRING_VIEW 1
+#else
+#define FIXSTR_USE_STD_STRING_VIEW 0
+#endif // FIXSTR_HAS_CPP17 && !defined(FIXSTR_NO_STD_STRING_VIEW)
 
 // Note that when ICC or Clang is in use, FIXSTR_GCC_VERSION might not fully match the actual GCC version on the system.
 #define FIXSTR_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -81,15 +87,7 @@ namespace fixstr
 namespace details
 {
 
-#if !FIXSTR_HAS_CPP17 || defined(FIXSTR_NO_STD_STRING_VIEW)
-
-//
-// TODO: implement custom string_view
-//
-
-#endif
-
-#if FIXSTR_HAS_CPP17 && !defined(FIXSTR_NO_STD_STRING_VIEW) // Use std::string_view
+#if FIXSTR_USE_STD_STRING_VIEW
 
 template<typename TChar, typename TTraits = std::char_traits<TChar>>
 using basic_string_view = std::basic_string_view<TChar, TTraits>;
@@ -97,13 +95,16 @@ using basic_string_view = std::basic_string_view<TChar, TTraits>;
 #else // Use custom string_view
 
 //
-// TODO: change to custom implementation
+// TODO: implement custom string_view
 //
 
-template<typename TChar, typename TTraits = std::char_traits<TChar>>
-using basic_string_view = std::basic_string_view<TChar, TTraits>;
+template <typename TChar, typename TTraits = std::char_traits<TChar>>
+class basic_string_view
+{
 
-#endif
+};
+
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
 template <typename InputIterator, typename OutputIterator>
 constexpr OutputIterator copy(InputIterator first, InputIterator last, OutputIterator d_first)
@@ -153,7 +154,7 @@ struct basic_fixed_string
     using const_reverse_iterator = typename storage_type::const_reverse_iterator;
     using size_type = size_t;
     using difference_type = ptrdiff_t;
-    using string_view_type = std::basic_string_view<value_type, traits_type>; // TODO: inspect usages and change to details::basic_string_view
+    using string_view_type = details::basic_string_view<value_type, traits_type>;
     static constexpr auto npos = string_view_type::npos;
 
     constexpr basic_fixed_string() noexcept { details::fill(_data.begin(), _data.end(), static_cast<value_type>(0)); }
@@ -252,10 +253,13 @@ struct basic_fixed_string
     // string operations
     [[nodiscard]] constexpr pointer       data() noexcept { return _data.data(); }
     [[nodiscard]] constexpr const_pointer data() const noexcept { return _data.data(); }
+
+#if FIXSTR_USE_STD_STRING_VIEW
     [[nodiscard]] constexpr               operator string_view_type() const noexcept // NOLINT(google-explicit-constructor)
     {
         return {data(), N};
     }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     template <size_type pos = 0, size_type count = npos>
     [[nodiscard]] constexpr substr_result_type<pos, count> substr()
@@ -274,10 +278,13 @@ struct basic_fixed_string
             return npos;
         return sv().find(str.sv(), pos);
     }
-    [[nodiscard]] constexpr size_type find(string_view_type sv, size_type pos = 0) const noexcept { return sv().find(sv, pos); }
     [[nodiscard]] constexpr size_type find(const value_type* s, size_type pos, size_type n) const { return sv().find(s, pos, n); }
     [[nodiscard]] constexpr size_type find(const value_type* s, size_type pos = 0) const { return sv().find(s, pos); }
     [[nodiscard]] constexpr size_type find(value_type c, size_type pos = 0) const noexcept { return sv().find(c, pos); }
+
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr size_type find(string_view_type sv, size_type pos = 0) const noexcept { return sv().find(sv, pos); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     template <size_t M>
     [[nodiscard]] constexpr size_type rfind(const same_with_other_size<M>& str, size_type pos = npos) const noexcept
@@ -286,10 +293,13 @@ struct basic_fixed_string
             return npos;
         return sv().rfind(str.sv(), pos);
     }
-    [[nodiscard]] constexpr size_type rfind(string_view_type sv, size_type pos = npos) const noexcept { return sv().rfind(sv, pos); }
     [[nodiscard]] constexpr size_type rfind(const value_type* s, size_type pos, size_type n) const { return sv().rfind(s, pos, n); }
     [[nodiscard]] constexpr size_type rfind(const value_type* s, size_type pos = npos) const { return sv().rfind(s, pos); }
     [[nodiscard]] constexpr size_type rfind(value_type c, size_type pos = npos) const noexcept { return sv().rfind(c, pos); }
+
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr size_type rfind(string_view_type sv, size_type pos = npos) const noexcept { return sv().rfind(sv, pos); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     template <size_t M>
     [[nodiscard]] constexpr size_type find_first_of(const same_with_other_size<M>& str, size_type pos = 0) const noexcept
@@ -298,10 +308,13 @@ struct basic_fixed_string
             return npos;
         return sv().find_first_of(str.sv(), pos);
     }
-    [[nodiscard]] constexpr size_type find_first_of(string_view_type sv, size_type pos = 0) const noexcept { return sv().find_first_of(sv, pos); }
     [[nodiscard]] constexpr size_type find_first_of(const value_type* s, size_type pos, size_type n) const { return sv().find_first_of(s, pos, n); }
     [[nodiscard]] constexpr size_type find_first_of(const value_type* s, size_type pos = 0) const { return sv().find_first_of(s, pos); }
     [[nodiscard]] constexpr size_type find_first_of(value_type c, size_type pos = 0) const noexcept { return sv().find_first_of(c, pos); }
+
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr size_type find_first_of(string_view_type sv, size_type pos = 0) const noexcept { return sv().find_first_of(sv, pos); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     template <size_t M>
     [[nodiscard]] constexpr size_type find_last_of(const same_with_other_size<M>& str, size_type pos = npos) const noexcept
@@ -310,10 +323,13 @@ struct basic_fixed_string
             return npos;
         return sv().find_last_of(str.sv(), pos);
     }
-    [[nodiscard]] constexpr size_type find_last_of(string_view_type sv, size_type pos = npos) const noexcept { return sv().find_last_of(sv, pos); }
     [[nodiscard]] constexpr size_type find_last_of(const value_type* s, size_type pos, size_type n) const { return sv().find_last_of(s, pos, n); }
     [[nodiscard]] constexpr size_type find_last_of(const value_type* s, size_type pos = npos) const { return sv().find_last_of(s, pos); }
     [[nodiscard]] constexpr size_type find_last_of(value_type c, size_type pos = npos) const noexcept { return sv().find_last_of(c, pos); }
+
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr size_type find_last_of(string_view_type sv, size_type pos = npos) const noexcept { return sv().find_last_of(sv, pos); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     template <size_t M>
     [[nodiscard]] constexpr size_type find_first_not_of(const same_with_other_size<M>& str, size_type pos = 0) const noexcept
@@ -322,10 +338,13 @@ struct basic_fixed_string
             return npos;
         return sv().find_first_of(str.sv(), pos);
     }
-    [[nodiscard]] constexpr size_type find_first_not_of(string_view_type sv, size_type pos = 0) const noexcept { return sv().find_first_not_of(sv, pos); }
     [[nodiscard]] constexpr size_type find_first_not_of(const value_type* s, size_type pos, size_type n) const { return sv().find_first_not_of(s, pos, n); }
     [[nodiscard]] constexpr size_type find_first_not_of(const value_type* s, size_type pos = 0) const { return sv().find_first_not_of(s, pos); }
     [[nodiscard]] constexpr size_type find_first_not_of(value_type c, size_type pos = 0) const noexcept { return sv().find_first_not_of(c, pos); }
+
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr size_type find_first_not_of(string_view_type sv, size_type pos = 0) const noexcept { return sv().find_first_not_of(sv, pos); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     template <size_t M>
     [[nodiscard]] constexpr size_type find_last_not_of(const same_with_other_size<M>& str, size_type pos = npos) const noexcept
@@ -334,17 +353,23 @@ struct basic_fixed_string
             return npos;
         return sv().find_last_of(str.sv(), pos);
     }
-    [[nodiscard]] constexpr size_type find_last_not_of(string_view_type sv, size_type pos = npos) const noexcept { return sv().find_last_not_of(sv, pos); }
     [[nodiscard]] constexpr size_type find_last_not_of(const value_type* s, size_type pos, size_type n) const { return sv().find_last_not_of(s, pos, n); }
     [[nodiscard]] constexpr size_type find_last_not_of(const value_type* s, size_type pos = npos) const { return sv().find_last_not_of(s, pos); }
     [[nodiscard]] constexpr size_type find_last_not_of(value_type c, size_type pos = npos) const noexcept { return sv().find_last_not_of(c, pos); }
 
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr size_type find_last_not_of(string_view_type sv, size_type pos = npos) const noexcept { return sv().find_last_not_of(sv, pos); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
+
+#if FIXSTR_USE_STD_STRING_VIEW
     [[nodiscard]] constexpr int compare(string_view_type v) const noexcept { return sv().compare(v); }
     [[nodiscard]] constexpr int compare(size_type pos1, size_type count1, string_view_type v) const { return sv().compare(pos1, count1, v); }
     [[nodiscard]] constexpr int compare(size_type pos1, size_type count1, string_view_type v, size_type pos2, size_type count2) const
     {
         return sv().compare(pos1, count1, v, pos2, count2);
     }
+#endif // FIXSTR_USE_STD_STRING_VIEW
+
     [[nodiscard]] constexpr int compare(const value_type* s) const { return sv().compare(s); }
     [[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* s) const { return sv().compare(pos1, count1, s); }
     [[nodiscard]] constexpr int compare(size_type pos1, size_type count1, const value_type* s, size_type count2) const
@@ -352,22 +377,34 @@ struct basic_fixed_string
         return sv().compare(pos1, count1, s, count2);
     }
 
-    [[nodiscard]] constexpr bool starts_with(string_view_type v) const noexcept { return sv().substr(0, v.size()) == v; }
     [[nodiscard]] constexpr bool starts_with(char c) const noexcept { return !empty() && traits_type::eq(front(), c); }
-    [[nodiscard]] constexpr bool starts_with(const value_type* s) const noexcept { return starts_with(string_view_type(s)); }
+    [[nodiscard]] constexpr bool starts_with(const value_type* s) const noexcept { return starts_with_impl(string_view_type(s)); }
 
-    [[nodiscard]] constexpr bool ends_with(string_view_type sv) const noexcept { return size() >= sv.size() && compare(size() - sv.size(), npos, sv) == 0; }
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr bool starts_with(string_view_type v) const noexcept { return starts_with_impl(v); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
+
     [[nodiscard]] constexpr bool ends_with(value_type c) const noexcept { return !empty() && traits_type::eq(back(), c); }
-    [[nodiscard]] constexpr bool ends_with(const value_type* s) const { return ends_with(string_view_type(s)); }
+    [[nodiscard]] constexpr bool ends_with(const value_type* s) const { return ends_with_impl(string_view_type(s)); }
 
-    [[nodiscard]] constexpr bool contains(string_view_type sv) const noexcept { return find(sv) != npos; }
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr bool ends_with(string_view_type v) const noexcept { return ends_with_impl(v); }
+#endif // FIXSTR_USE_STD_STRING_VIEW
+
     [[nodiscard]] constexpr bool contains(value_type c) const noexcept { return find(c) != npos; }
     [[nodiscard]] constexpr bool contains(const value_type* s) const { return find(s) != npos; }
+
+#if FIXSTR_USE_STD_STRING_VIEW
+    [[nodiscard]] constexpr bool contains(string_view_type v) const noexcept { return find(v) != npos; }
+#endif // FIXSTR_USE_STD_STRING_VIEW
 
     void swap(basic_fixed_string& other) noexcept(std::is_nothrow_swappable_v<storage_type>) { _data.swap(other._data); }
 
   private:
     constexpr string_view_type sv() { return *this; }
+
+    [[nodiscard]] constexpr bool starts_with_impl(string_view_type v) const noexcept { return sv().substr(0, v.size()) == v; }
+    [[nodiscard]] constexpr bool ends_with_impl(string_view_type v) const noexcept { return size() >= v.size() && compare(size() - v.size(), npos, v) == 0; }
 };
 
 template <typename TChar, typename TTraits, size_t N>
