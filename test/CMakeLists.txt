@@ -33,6 +33,8 @@ function(make_test src target std)
     add_test(NAME ${target} COMMAND ${target})
 endfunction()
 
+make_test(test.cpp test-cpp14 c++14)
+
 make_test(test.cpp test-cpp17 c++17)
 
 if(HAS_CPP20_FLAG)
