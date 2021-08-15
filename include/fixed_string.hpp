@@ -48,6 +48,12 @@
 #endif // _MSC_VER
 
 #if FIXSTR_CPP_VERSION >= 201703L
+#define FIXSTR_HAS_CXX17 1
+#else
+#define FIXSTR_HAS_CXX17 0
+#endif
+
+#if FIXSTR_HAS_CXX17
 #define FIXSTR_CONSTEXPR_CXX17 constexpr
 #else
 #define FIXSTR_CONSTEXPR_CXX17 /* empty */
