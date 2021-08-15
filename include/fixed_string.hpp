@@ -48,15 +48,15 @@
 #endif // _MSC_VER
 
 #if FIXSTR_CPP_VERSION >= 201703L
-#define FIXSTR_HAS_CXX17 1
+#define FIXSTR_HAS_CPP17 1
 #else
-#define FIXSTR_HAS_CXX17 0
+#define FIXSTR_HAS_CPP17 0
 #endif
 
-#if FIXSTR_HAS_CXX17
-#define FIXSTR_CONSTEXPR_CXX17 constexpr
+#if FIXSTR_HAS_CPP17
+#define FIXSTR_CPP17_CONSTEXPR constexpr
 #else
-#define FIXSTR_CONSTEXPR_CXX17 /* empty */
+#define FIXSTR_CPP17_CONSTEXPR /* empty */
 #endif
 
 // Note that when ICC or Clang is in use, FIXSTR_GCC_VERSION might not fully match the actual GCC version on the system.
@@ -212,7 +212,7 @@ struct basic_fixed_string
     template <size_type pos, size_type count, size_type size>
     constexpr static size_type calculate_substr_size()
     {
-        if FIXSTR_CONSTEXPR_CXX17 (pos >= size)
+        if FIXSTR_CPP17_CONSTEXPR (pos >= size)
             return 0;
 
         constexpr size_type rcount = std::min(count, size - pos);
@@ -245,7 +245,7 @@ struct basic_fixed_string
     template <size_t M>
     [[nodiscard]] constexpr size_type find(const same_with_other_size<M>& str, size_type pos = 0) const noexcept
     {
-        if FIXSTR_CONSTEXPR_CXX17 (M > N)
+        if FIXSTR_CPP17_CONSTEXPR (M > N)
             return npos;
         return sv().find(str.sv(), pos);
     }
@@ -257,7 +257,7 @@ struct basic_fixed_string
     template <size_t M>
     [[nodiscard]] constexpr size_type rfind(const same_with_other_size<M>& str, size_type pos = npos) const noexcept
     {
-        if FIXSTR_CONSTEXPR_CXX17 (M > N)
+        if FIXSTR_CPP17_CONSTEXPR (M > N)
             return npos;
         return sv().rfind(str.sv(), pos);
     }
@@ -269,7 +269,7 @@ struct basic_fixed_string
     template <size_t M>
     [[nodiscard]] constexpr size_type find_first_of(const same_with_other_size<M>& str, size_type pos = 0) const noexcept
     {
-        if FIXSTR_CONSTEXPR_CXX17 (M > N)
+        if FIXSTR_CPP17_CONSTEXPR (M > N)
             return npos;
         return sv().find_first_of(str.sv(), pos);
     }
@@ -281,7 +281,7 @@ struct basic_fixed_string
     template <size_t M>
     [[nodiscard]] constexpr size_type find_last_of(const same_with_other_size<M>& str, size_type pos = npos) const noexcept
     {
-        if FIXSTR_CONSTEXPR_CXX17 (M > N)
+        if FIXSTR_CPP17_CONSTEXPR (M > N)
             return npos;
         return sv().find_last_of(str.sv(), pos);
     }
@@ -293,7 +293,7 @@ struct basic_fixed_string
     template <size_t M>
     [[nodiscard]] constexpr size_type find_first_not_of(const same_with_other_size<M>& str, size_type pos = 0) const noexcept
     {
-        if FIXSTR_CONSTEXPR_CXX17 (M > N)
+        if FIXSTR_CPP17_CONSTEXPR (M > N)
             return npos;
         return sv().find_first_of(str.sv(), pos);
     }
@@ -305,7 +305,7 @@ struct basic_fixed_string
     template <size_t M>
     [[nodiscard]] constexpr size_type find_last_not_of(const same_with_other_size<M>& str, size_type pos = npos) const noexcept
     {
-        if FIXSTR_CONSTEXPR_CXX17 (M > N)
+        if FIXSTR_CPP17_CONSTEXPR (M > N)
             return npos;
         return sv().find_last_of(str.sv(), pos);
     }
@@ -354,7 +354,7 @@ void swap(basic_fixed_string<TChar, N, TTraits>& lhs, basic_fixed_string<TChar, 
 template <typename TChar, typename TTraits, size_t M1, size_t M2>
 [[nodiscard]] constexpr bool operator==(const basic_fixed_string<TChar, M1, TTraits>& lhs, const basic_fixed_string<TChar, M2, TTraits>& rhs)
 {
-    if FIXSTR_CONSTEXPR_CXX17 (M1 != M2)
+    if FIXSTR_CPP17_CONSTEXPR (M1 != M2)
         return false;
     using lhs_type = std::decay_t<decltype(lhs)>;
     using sv_type = typename lhs_type::string_view_type;
@@ -408,7 +408,7 @@ template <typename TChar, typename TTraits, size_t N>
 template <typename TChar, typename TTraits, size_t M1, size_t M2>
 [[nodiscard]] constexpr bool operator!=(const basic_fixed_string<TChar, M1, TTraits>& lhs, const basic_fixed_string<TChar, M2, TTraits>& rhs)
 {
-    if FIXSTR_CONSTEXPR_CXX17 (M1 != M2)
+    if FIXSTR_CPP17_CONSTEXPR (M1 != M2)
         return true;
     using lhs_type = std::decay_t<decltype(lhs)>;
     using sv_type = typename lhs_type::string_view_type;
