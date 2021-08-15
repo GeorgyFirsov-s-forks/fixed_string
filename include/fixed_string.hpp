@@ -80,6 +80,31 @@ namespace fixstr
 
 namespace details
 {
+
+#if !FIXSTR_HAS_CPP17 || defined(FIXSTR_NO_STD_STRING_VIEW)
+
+//
+// TODO: implement custom string_view
+//
+
+#endif
+
+#if FIXSTR_HAS_CPP17 && !defined(FIXSTR_NO_STD_STRING_VIEW) // Use std::string_view
+
+template<typename TChar, typename TTraits = std::char_traits<TChar>>
+using basic_string_view = std::basic_string_view<TChar, TTraits>;
+
+#else // Use custom string_view
+
+//
+// TODO: change to custom implementation
+//
+
+template<typename TChar, typename TTraits = std::char_traits<TChar>>
+using basic_string_view = std::basic_string_view<TChar, TTraits>;
+
+#endif
+
 template <typename InputIterator, typename OutputIterator>
 constexpr OutputIterator copy(InputIterator first, InputIterator last, OutputIterator d_first)
 {
@@ -128,7 +153,7 @@ struct basic_fixed_string
     using const_reverse_iterator = typename storage_type::const_reverse_iterator;
     using size_type = size_t;
     using difference_type = ptrdiff_t;
-    using string_view_type = std::basic_string_view<value_type, traits_type>;
+    using string_view_type = std::basic_string_view<value_type, traits_type>; // TODO: inspect usages and change to details::basic_string_view
     static constexpr auto npos = string_view_type::npos;
 
     constexpr basic_fixed_string() noexcept { details::fill(_data.begin(), _data.end(), static_cast<value_type>(0)); }
