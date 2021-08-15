@@ -267,13 +267,15 @@ struct basic_fixed_string
     }
 #endif // FIXSTR_USE_STD_STRING_VIEW
 
-    template <size_type pos = 0, size_type count = npos>
-    FIXSTR_NODISCARD constexpr substr_result_type<pos, count> substr()
+    // clang-format off
+    template <size_type pos = 0, size_type count = npos,
+              typename..., bool IsPosInBounds = pos <= N, typename = std::enable_if_t<IsPosInBounds>>
+    FIXSTR_NODISCARD constexpr auto substr() const noexcept
+        -> substr_result_type<pos, count>
+    // clang-format on
     {
-        static_assert(pos <= N, "pos cannot be larger than size!");
-        constexpr size_type            rcount = calculate_substr_size<pos, count, N>();
         substr_result_type<pos, count> result;
-        details::copy(begin() + pos, begin() + pos + rcount, result.begin());
+        details::copy(begin() + pos, begin() + pos + result.size(), result.begin());
         return result;
     }
 
@@ -604,7 +606,7 @@ basic_fixed_string(const TChar (&)[N]) -> basic_fixed_string<TChar, N - 1>;
 // of basic_fixed_string when fixed_string and other typedef were just type aliases.
 // That's why the following code is written in this way.
 template <size_t N>
-struct fixed_string : basic_fixed_string<char, N>
+struct fixed_string final : basic_fixed_string<char, N>
 {
     using basic_fixed_string<char, N>::basic_fixed_string;
 };
@@ -613,7 +615,7 @@ fixed_string(const char (&)[N]) -> fixed_string<N - 1>;
 
 #if FIXSTR_CPP20_CHAR8T_PRESENT
 template <size_t N>
-struct fixed_u8string : basic_fixed_string<char8_t, N>
+struct fixed_u8string final : basic_fixed_string<char8_t, N>
 {
     using basic_fixed_string<char8_t, N>::basic_fixed_string;
 };
@@ -622,7 +624,7 @@ fixed_u8string(const char8_t (&)[N]) -> fixed_u8string<N - 1>;
 #endif // FIXSTR_CPP20_CHAR8T_PRESENT
 
 template <size_t N>
-struct fixed_u16string : basic_fixed_string<char16_t, N>
+struct fixed_u16string final : basic_fixed_string<char16_t, N>
 {
     using basic_fixed_string<char16_t, N>::basic_fixed_string;
 };
@@ -630,7 +632,7 @@ template <std::size_t N>
 fixed_u16string(const char16_t (&)[N]) -> fixed_u16string<N - 1>;
 
 template <size_t N>
-struct fixed_u32string : basic_fixed_string<char32_t, N>
+struct fixed_u32string final : basic_fixed_string<char32_t, N>
 {
     using basic_fixed_string<char32_t, N>::basic_fixed_string;
 };
@@ -638,7 +640,7 @@ template <std::size_t N>
 fixed_u32string(const char32_t (&)[N]) -> fixed_u32string<N - 1>;
 
 template <size_t N>
-struct fixed_wstring : basic_fixed_string<wchar_t, N>
+struct fixed_wstring final : basic_fixed_string<wchar_t, N>
 {
     using basic_fixed_string<wchar_t, N>::basic_fixed_string;
 };
