@@ -93,6 +93,21 @@ namespace fixstr
 namespace details
 {
 
+#if FIXSTR_HAS_CPP17
+
+template<typename T>
+using is_nothrow_swappable = std::is_nothrow_swappable<T>;
+
+#else
+
+template<typename T>
+struct is_nothrow_swappable
+    : std::conditional<noexcept(swap(std::declval<T&>(), std::declval<T&>())),
+                       std::true_type, std::false_type>::type
+{ };
+
+#endif
+
 #if FIXSTR_USE_STD_STRING_VIEW
 
 template<typename TChar, typename TTraits = std::char_traits<TChar>>
@@ -406,7 +421,7 @@ struct basic_fixed_string
     FIXSTR_NODISCARD constexpr bool contains(string_view_type v) const noexcept { return find(v) != npos; }
 #endif // FIXSTR_USE_STD_STRING_VIEW
 
-    void swap(basic_fixed_string& other) noexcept(std::is_nothrow_swappable_v<storage_type>) { _data.swap(other._data); }
+    void swap(basic_fixed_string& other) noexcept(details::is_nothrow_swappable<storage_type>::value) { _data.swap(other._data); }
 
   private:
     constexpr string_view_type sv() { return *this; }
@@ -659,14 +674,14 @@ constexpr basic_fixed_string<TChar, N + M, TTraits> operator+(const basic_fixed_
 template <typename TChar, size_t N, size_t M, typename TTraits>
 constexpr basic_fixed_string<TChar, N - 1 + M, TTraits> operator+(const TChar (&lhs)[N], const basic_fixed_string<TChar, M, TTraits>& rhs)
 {
-    basic_fixed_string lhs2 = lhs;
+    basic_fixed_string<TChar, N - 1> lhs2 = lhs;
     return lhs2 + rhs;
 }
 
 template <typename TChar, size_t N, size_t M, typename TTraits>
 constexpr basic_fixed_string<TChar, N + M - 1, TTraits> operator+(const basic_fixed_string<TChar, N, TTraits>& lhs, const TChar (&rhs)[M])
 {
-    basic_fixed_string rhs2 = rhs;
+    basic_fixed_string<TChar, M - 1> rhs2 = rhs;
     return lhs + rhs2;
 }
 
