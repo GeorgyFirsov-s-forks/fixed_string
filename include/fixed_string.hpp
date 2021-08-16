@@ -614,8 +614,12 @@ FIXSTR_NODISCARD constexpr bool operator>=(std::basic_string_view<TChar, TTraits
 
 #endif // FIXSTR_CPP20_SPACESHIP_OPERATOR_PRESENT
 
+#if FIXSTR_HAS_CPP17
+
 template <typename TChar, size_t N>
 basic_fixed_string(const TChar (&)[N]) -> basic_fixed_string<TChar, N - 1>;
+
+#endif // FIXSTR_HAS_CPP17
 
 // Early GCC versions that support cNTTP were not able to deduce size_t parameter
 // of basic_fixed_string when fixed_string and other typedef were just type aliases.
@@ -625,8 +629,13 @@ struct fixed_string final : basic_fixed_string<char, N>
 {
     using basic_fixed_string<char, N>::basic_fixed_string;
 };
+
+#if FIXSTR_HAS_CPP17
+
 template <std::size_t N>
 fixed_string(const char (&)[N]) -> fixed_string<N - 1>;
+
+#endif // FIXSTR_HAS_CPP17
 
 #if FIXSTR_CPP20_CHAR8T_PRESENT
 template <size_t N>
@@ -643,24 +652,39 @@ struct fixed_u16string final : basic_fixed_string<char16_t, N>
 {
     using basic_fixed_string<char16_t, N>::basic_fixed_string;
 };
+
+#if FIXSTR_HAS_CPP17
+
 template <std::size_t N>
 fixed_u16string(const char16_t (&)[N]) -> fixed_u16string<N - 1>;
+
+#endif // FIXSTR_HAS_CPP17
 
 template <size_t N>
 struct fixed_u32string final : basic_fixed_string<char32_t, N>
 {
     using basic_fixed_string<char32_t, N>::basic_fixed_string;
 };
+
+#if FIXSTR_HAS_CPP17
+
 template <std::size_t N>
 fixed_u32string(const char32_t (&)[N]) -> fixed_u32string<N - 1>;
+
+#endif // FIXSTR_HAS_CPP17
 
 template <size_t N>
 struct fixed_wstring final : basic_fixed_string<wchar_t, N>
 {
     using basic_fixed_string<wchar_t, N>::basic_fixed_string;
 };
+
+#if FIXSTR_HAS_CPP17
+
 template <std::size_t N>
 fixed_wstring(const wchar_t (&)[N]) -> fixed_wstring<N - 1>;
+
+#endif // FIXSTR_HAS_CPP17
 
 template <typename TChar, size_t N, size_t M, typename TTraits>
 constexpr basic_fixed_string<TChar, N + M, TTraits> operator+(const basic_fixed_string<TChar, N, TTraits>& lhs, const basic_fixed_string<TChar, M, TTraits>& rhs)
