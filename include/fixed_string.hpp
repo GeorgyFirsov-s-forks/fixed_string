@@ -115,14 +115,221 @@ using basic_string_view = std::basic_string_view<TChar, TTraits>;
 
 #else // Use custom string_view
 
-//
-// TODO: implement custom string_view
-//
+// Windows.h defines two macro min and max, that conflict
+// with std::min and std::max respectively.
+template<typename T>
+constexpr T minimum(T f, T s) noexcept { return f < s ? f : s; }
 
+
+// Not fully compatible with C++17 std::string_view, but enough
+// to satisfy fixstr::fixed_string requirements
 template <typename TChar, typename TTraits = std::char_traits<TChar>>
 class basic_string_view final
 {
+  public:
+    using char_type = TChar;
+    using size_type = std::size_t;
+    using traits_type = TTraits;
 
+  public:
+    static constexpr size_type npos = size_type(-1);
+
+  public:
+    constexpr basic_string_view(const char_type* data, size_type size)
+        : _data(data),
+          _size(size)
+    { }
+
+    constexpr explicit basic_string_view(const char_type* data)
+        : _data(data),
+          _size(std::strlen(data))
+    { }
+
+    FIXSTR_NODISCARD constexpr const char_type* data() const noexcept { return _data; }
+
+    FIXSTR_NODISCARD constexpr size_type size() const noexcept { return _size; }
+
+    FIXSTR_NODISCARD constexpr bool empty() const noexcept { return _size == 0; }
+
+    FIXSTR_NODISCARD constexpr size_type find(basic_string_view v, size_type pos = 0) const
+    {
+        if (pos > _size) return npos;
+        if (pos + v.size() > _size) return npos;
+
+        const size_type max_iterations = _size - v.size() - pos;
+        for (size_type i = 0; i < max_iterations; i++)
+        {
+            const size_type offset = pos + i;
+            if (substr(offset, v.size()) == v) return offset;
+        }
+
+        return npos;
+    }
+
+    FIXSTR_NODISCARD constexpr size_type find(char_type c, size_type pos = 0) const {
+        return find(basic_string_view<char_type , traits_type>(&c, 1), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find(const char_type* s, size_type pos, size_type count) const {
+        return find(basic_string_view<char_type, traits_type>(s, count), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find(const char_type* s, size_type pos = 0) const {
+        return find(basic_string_view<char_type, traits_type>(s), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type rfind(basic_string_view v, size_type pos = npos) const
+    {
+        if (empty()) return npos;
+        if (v.size() > _size) return npos;
+
+        if (v.empty()) return minimum(_size - 1, pos);
+
+        for (size_type i = minimum(pos, _size - v.size()); i != npos; i--) {
+            if (substr(i, v.size()) == v) return i;
+        }
+
+        return npos;
+    }
+
+    FIXSTR_NODISCARD constexpr size_type rfind(char_type c, size_type pos = npos) const {
+        return rfind(basic_string_view<char_type, traits_type>(&c, 1), pos);
+    }
+
+    FIXSTR_NODISCARD constexpr size_type rfind(const char_type* s, size_type pos, size_type count) const {
+        return rfind(basic_string_view<char_type, traits_type>(s, count), pos);
+    }
+
+    FIXSTR_NODISCARD constexpr size_type rfind(const char_type* s, size_type pos = npos) const {
+        return rfind(basic_string_view<char_type, traits_type>(s), pos);
+    }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_of(basic_string_view v, size_type pos = 0) const
+    {
+        for (size_type i = pos; i < _size; i++) {
+            if (is_one_of(_data[i], v)) return i;
+        }
+
+        return npos;
+    }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_of(char_type c, size_type pos = 0) const {
+        return find_first_of(basic_string_view<char_type, traits_type>(&c, 1), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_of(const char_type* s, size_type pos, size_type count) const {
+        return find_first_of(basic_string_view<char_type, traits_type>(s, count), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_of(const char_type* s, size_type pos = 0) const {
+        return find_first_of(basic_string_view<char_type, traits_type>(s), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_of(basic_string_view v, size_type pos = npos) const
+    {
+        if (empty()) return npos;
+
+        const size_type max_index = minimum(_size - 1, pos);
+        for (size_type i = 0; i < max_index; i++)
+        {
+            const auto offset = max_index - i;
+            if (is_one_of(_data[offset], v)) return offset;
+        }
+
+        return npos;
+    }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_of(char_type c, size_type pos = npos) const {
+        return find_last_of(basic_string_view<char_type, traits_type>(&c, 1), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_of(const char_type* s, size_type pos, size_type count) const {
+        return find_last_of(basic_string_view<char_type, traits_type>(s, count), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_of(const char_type* s, size_type pos = npos) const {
+        return find_last_of(basic_string_view<char_type, traits_type>(s), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_not_of(basic_string_view v, size_type pos = 0) const
+    {
+        for (size_type i = pos; i < _size; i++) {
+            if (!is_one_of(_data[i], v)) return i;
+        }
+
+        return npos;
+    }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_not_of(char_type c, size_type pos = 0) const {
+        return find_first_not_of(basic_string_view<char_type, traits_type>(&c, 1), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_not_of(const char_type* s, size_type pos, size_type count) const {
+        return find_first_not_of(basic_string_view<char_type, traits_type>(s, count), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_first_not_of(const char_type* s, size_type pos = 0) const {
+        return find_first_not_of(basic_string_view<char_type, traits_type>(s), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_not_of(basic_string_view v, size_type pos = npos) const
+    {
+        if (empty()) return npos;
+
+        const size_type max_index = minimum(_size - 1, pos);
+        for (size_type i = 0; i < max_index; i++)
+        {
+            const size_type offset = max_index - i;
+            if (!is_one_of(_data[offset], v)) return offset;
+        }
+
+        return npos;
+    }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_not_of(char_type c, size_type pos = npos) const {
+        return find_last_not_of(basic_string_view<char_type, traits_type>(&c, 1), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_not_of(const char_type* s, size_type pos, size_type count) const {
+        return find_last_not_of(basic_string_view<char_type, traits_type>(s, count), pos); }
+
+    FIXSTR_NODISCARD constexpr size_type find_last_not_of(const char_type* s, size_type pos = npos) const {
+        return find_last_not_of(basic_string_view<char_type, traits_type>(s), pos); }
+
+    FIXSTR_NODISCARD constexpr basic_string_view substr(size_t pos = 0, size_t len = npos) const
+    {
+        if (pos > _size) {
+            throw std::out_of_range("basic_string_view::substr");
+        }
+
+        return basic_string_view(_data + pos, std::min(len, _size - pos) );
+    }
+
+    FIXSTR_NODISCARD constexpr int compare(basic_string_view v) const noexcept
+    {
+        const size_type len = minimum(_size, v.size());
+        const int cmp = traits_type::compare(_data, v._data, len);
+
+        return cmp \
+            ? cmp
+            : _size < v.size() ? -1 : (_size > v.size() ? 1 : 0);
+    }
+
+    FIXSTR_NODISCARD constexpr int compare(size_type pos, size_type count, basic_string_view v) const {
+        return substr(pos, count).compare(v); }
+
+    FIXSTR_NODISCARD constexpr int compare(size_type pos1, size_type count1, basic_string_view v, size_type pos2, size_type count2 ) const {
+        return substr(pos1, count1).compare(v.substr(pos2, count2)); }
+
+    FIXSTR_NODISCARD constexpr int compare(const char_type* s) const {
+        return compare(basic_string_view<char_type, traits_type>(s)); }
+
+    FIXSTR_NODISCARD constexpr int compare(size_type pos, size_type count, const char_type* s) const {
+        return substr(pos, count).compare(basic_string_view<char_type, traits_type>(s)); }
+
+    FIXSTR_NODISCARD constexpr int compare(size_type pos, size_type count1, const char_type* s, size_type count2 ) const {
+        return substr(pos, count1).compare(basic_string_view<char_type, traits_type>(s, count2)); }
+
+  private:
+    FIXSTR_NODISCARD static constexpr bool is_one_of(char_type c, basic_string_view v)
+    {
+        for (size_type i = 0; i < v._size; i++) {
+            if (v._data[i] == c) return true;
+        }
+
+        return false;
+    }
+
+  private:
+    const char_type* _data;
+    size_type _size;
 };
 
 #endif // FIXSTR_USE_STD_STRING_VIEW
@@ -274,13 +481,10 @@ struct basic_fixed_string
     // string operations
     FIXSTR_NODISCARD constexpr pointer       data() noexcept { return _data.data(); }
     FIXSTR_NODISCARD constexpr const_pointer data() const noexcept { return _data.data(); }
-
-#if FIXSTR_USE_STD_STRING_VIEW
-    FIXSTR_NODISCARD constexpr operator string_view_type() const noexcept // NOLINT(google-explicit-constructor)
+    FIXSTR_NODISCARD constexpr               operator string_view_type() const noexcept // NOLINT(google-explicit-constructor)
     {
-        return {data(), N};
+        return sv();
     }
-#endif // FIXSTR_USE_STD_STRING_VIEW
 
     // clang-format off
     template <size_type pos = 0, size_type count = npos,
@@ -424,7 +628,7 @@ struct basic_fixed_string
     void swap(basic_fixed_string& other) noexcept(details::is_nothrow_swappable<storage_type>::value) { _data.swap(other._data); }
 
   private:
-    constexpr string_view_type sv() { return *this; }
+    constexpr string_view_type sv() const noexcept { return { data(), N }; }
 
     FIXSTR_NODISCARD constexpr bool starts_with_impl(string_view_type v) const noexcept { return sv().substr(0, v.size()) == v; }
     FIXSTR_NODISCARD constexpr bool ends_with_impl(string_view_type v) const noexcept { return size() >= v.size() && compare(size() - v.size(), npos, v) == 0; }
