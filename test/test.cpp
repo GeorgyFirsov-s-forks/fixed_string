@@ -44,6 +44,21 @@ using u32fs = fixed_u32string<default_size>;
 
 namespace utils
 {
+template<typename...>
+using void_t = void;
+
+template <class C>
+constexpr auto size(const C& c) -> decltype(c.size())
+{
+    return c.size();
+}
+
+template <class T, std::size_t N>
+constexpr std::size_t size(const T (&)[N]) noexcept
+{
+    return N;
+}
+
 template <typename T>
 constexpr auto equals(T value)
 {
@@ -108,7 +123,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
     T str(converted_literal);
     REQUIRE(std::equal(str.begin(), str.end(), std::begin(converted_literal)));
@@ -122,7 +137,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
     T str(converted_literal);
     T str2(str);
@@ -181,7 +196,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
 
     T str;
@@ -197,7 +212,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
     T str2 = converted_literal;
 
@@ -354,7 +369,9 @@ TEST_CASE("std::string_view conversion")
     SECTION("fixed_u32string") { check<u32fs>(); }
 }
 
-namespace utils::traits
+namespace utils
+{
+namespace traits
 {
 struct nonesuch
 {
@@ -372,7 +389,7 @@ struct detector
 };
 
 template <class Default, template <class...> class Op, class... Args>
-struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
+struct detector<Default, utils::void_t<Op<Args...>>, Op, Args...>
 {
     using value_t = std::true_type;
     using type = Op<Args...>;
@@ -382,7 +399,8 @@ struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
 
 template <template <class...> class Op, class... Args>
 using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
-} // namespace utils::traits
+} // namespace traits
+} // namespace utils
 
 namespace substr
 {
@@ -393,7 +411,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
 
     T    str(converted_literal);
@@ -409,7 +427,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
 
     T    str(converted_literal);
@@ -425,7 +443,7 @@ void check()
 {
     using char_t = typename T::value_type;
     constexpr char literal[] = "Hello, world!!!";
-    char_t         converted_literal[std::size(literal)]{};
+    char_t         converted_literal[utils::size(literal)]{};
     utils::convert_literal(literal, converted_literal);
 
     constexpr auto pos = 2;
@@ -527,9 +545,9 @@ void check()
     const auto rhs_fs = utils::to_fs<char_t>(rhs);
     const auto fs_res = lhs_fs + rhs_fs;
 
-    std::basic_string lhs_std = lhs_fs.data();
-    std::basic_string rhs_std = rhs_fs.data();
-    const auto        std_res = lhs_std + rhs_std;
+    std::basic_string<char_t> lhs_std = lhs_fs.data();
+    std::basic_string<char_t> rhs_std = rhs_fs.data();
+    const auto                std_res = lhs_std + rhs_std;
 
     REQUIRE(static_cast<sv_t>(fs_res) == std_res);
 
